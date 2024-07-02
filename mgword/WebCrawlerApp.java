@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
@@ -71,7 +72,6 @@ public class WebCrawlerApp {
         frame.setVisible(true);
     }
 
-    // Placeholder methods for button actions
     private void startCrawling(String url) {
         contentArea.append("开始爬取: " + url + "\n");
         webCrawler.startCrawling(url);
@@ -121,7 +121,7 @@ public class WebCrawlerApp {
                 if (checkBox.isSelected()) {
                     String url = checkBox.getText();
                     String content = contentType.equals("html") ? webCrawler.getHtmlContent(url) : webCrawler.getTextContent(url);
-                    contentArea.append("URL: " + url + "\n" + content + "\n\n");
+                    highlightSensitiveWords(content);
                 }
             }
             dialog.dispose();
@@ -129,6 +129,24 @@ public class WebCrawlerApp {
 
         dialog.add(showButton, BorderLayout.SOUTH);
         dialog.setVisible(true);
+    }
+
+    private void highlightSensitiveWords(String content) {
+        contentArea.setText(content);
+        Highlighter highlighter = contentArea.getHighlighter();
+        Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+
+        for (String word : sensitiveWords) {
+            int index = content.indexOf(word);
+            while (index >= 0) {
+                try {
+                    highlighter.addHighlight(index, index + word.length(), painter);
+                    index = content.indexOf(word, index + word.length());
+                } catch (BadLocationException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     private void importSensitiveWords() {
