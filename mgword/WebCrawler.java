@@ -3,7 +3,6 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +19,7 @@ public class WebCrawler {
     private final Map<String, String> htmlContents = new HashMap<>();
     private final Map<String, String> textContents = new HashMap<>();
 
-    public WebCrawler(JFrame parent,int numThreads) {
+    public WebCrawler(int numThreads) {
         executorService = Executors.newFixedThreadPool(numThreads);
     }
 
@@ -49,7 +48,7 @@ public class WebCrawler {
         try {
             Document document = Jsoup.connect(url).get();
             System.out.println("Crawling: " + url);
-            //把正在爬取的url添加在父类的contentArea中
+
             htmlContents.put(url, document.html());
             textContents.put(url, document.text());
 

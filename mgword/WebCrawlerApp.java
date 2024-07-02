@@ -1,29 +1,28 @@
 import javax.swing.*;
-import javax.swing.text.*;
 import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-public class WebCrawlerApp extends JFrame {
+public class WebCrawlerApp {
+    private JFrame frame;
     private JTextField urlField;
-    private JTextPane contentArea;
+    private JTextArea contentArea;
     private List<String> sensitiveWords;
     private WebCrawler webCrawler;
 
     public WebCrawlerApp() {
-
         sensitiveWords = new ArrayList<>();
-        webCrawler = new WebCrawler(this,10);  // 使用 10 个线程进行爬取
+        webCrawler = new WebCrawler(10);  // 使用 10 个线程进行爬取
         initComponents();
     }
 
     private void initComponents() {
-        this.setTitle("Web Crawler");
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        this.setSize(800, 600);
-        this.setLayout(new BorderLayout());
+        frame = new JFrame("Web Crawler");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(800, 600);
+        frame.setLayout(new BorderLayout());
 
         // URL 输入面板
         JPanel topPanel = new JPanel();
@@ -32,13 +31,14 @@ public class WebCrawlerApp extends JFrame {
         urlField = new JTextField(50);
         topPanel.add(urlLabel);
         topPanel.add(urlField);
-        this.add(topPanel, BorderLayout.NORTH);
+        frame.add(topPanel, BorderLayout.NORTH);
 
         // 内容显示面板
-        contentArea = new JTextPane();
-        contentArea.setContentType("text/html");
+        contentArea = new JTextArea();
+        contentArea.setLineWrap(true);
+        contentArea.setWrapStyleWord(true);
         JScrollPane scrollPane = new JScrollPane(contentArea);
-        this.add(scrollPane, BorderLayout.CENTER);
+        frame.add(scrollPane, BorderLayout.CENTER);
 
         // 按钮面板
         JPanel bottomPanel = new JPanel();
@@ -66,18 +66,19 @@ public class WebCrawlerApp extends JFrame {
         bottomPanel.add(importButton);
         bottomPanel.add(modifyButton);
 
-        this.add(bottomPanel, BorderLayout.SOUTH);
+        frame.add(bottomPanel, BorderLayout.SOUTH);
 
-        this.setVisible(true);
+        frame.setVisible(true);
     }
 
+    // Placeholder methods for button actions
     private void startCrawling(String url) {
-        contentArea.setText("开始爬取: " + url + "<br>");
+        contentArea.append("开始爬取: " + url + "\n");
         webCrawler.startCrawling(url);
     }
 
     private void stopCrawling() {
-        contentArea.setText(contentArea.getText() + "结束爬取<br>");
+        contentArea.append("结束爬取\n");
         webCrawler.stopCrawling();
     }
 
@@ -92,11 +93,11 @@ public class WebCrawlerApp extends JFrame {
     private void showUrlSelectionDialog(String contentType) {
         Set<String> visitedUrls = webCrawler.getVisitedUrls();
         if (visitedUrls.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "没有已爬取的URL可供选择。", "错误", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(frame, "没有已爬取的URL可供选择。", "错误", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        JDialog dialog = new JDialog(this, "选择URL", true);
+        JDialog dialog = new JDialog(frame, "选择URL", true);
         dialog.setLayout(new BorderLayout());
         dialog.setSize(400, 300);
 
@@ -120,12 +121,7 @@ public class WebCrawlerApp extends JFrame {
                 if (checkBox.isSelected()) {
                     String url = checkBox.getText();
                     String content = contentType.equals("html") ? webCrawler.getHtmlContent(url) : webCrawler.getTextContent(url);
-                    if (contentType.equals("text")) {
-                        content = highlightSensitiveWords(content);
-                    } else {
-                        content = highlightSensitiveWordsInHtml(content);
-                    }
-                    contentArea.setText(contentArea.getText() + "URL: " + url + "<br>" + content + "<br><br>");
+                    contentArea.append("URL: " + url + "\n" + content + "\n\n");
                 }
             }
             dialog.dispose();
@@ -133,20 +129,6 @@ public class WebCrawlerApp extends JFrame {
 
         dialog.add(showButton, BorderLayout.SOUTH);
         dialog.setVisible(true);
-    }
-
-    private String highlightSensitiveWords(String content) {
-        for (String word : sensitiveWords) {
-            content = content.replaceAll("(?i)" + word, "<span style='background-color: yellow;'>" + word + "</span>");
-        }
-        return content;
-    }
-
-    private String highlightSensitiveWordsInHtml(String content) {
-        for (String word : sensitiveWords) {
-            content = content.replaceAll("(?i)" + word, "<span style='background-color: yellow;'>" + word + "</span>");
-        }
-        return content;
     }
 
     private void importSensitiveWords() {
@@ -165,7 +147,7 @@ public class WebCrawlerApp extends JFrame {
             while ((line = reader.readLine()) != null) {
                 sensitiveWords.add(line.trim());
                 contentArea.setText("");
-                contentArea.setText("敏感词库导入如下: " + sensitiveWords + "<br>");
+                contentArea.append("敏感词库导入如下: " + sensitiveWords + "\n");
             }
             System.out.println("敏感词库导入成功: " + sensitiveWords.size() + " 个敏感词");
         } catch (IOException e) {
