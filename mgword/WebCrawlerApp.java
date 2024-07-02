@@ -4,7 +4,15 @@ import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import edu.uci.ics.jung.algorithms.layout.CircleLayout;
+import edu.uci.ics.jung.graph.DirectedSparseMultigraph;
+import edu.uci.ics.jung.graph.Graph;
+import edu.uci.ics.jung.visualization.VisualizationViewer;
+import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
+import edu.uci.ics.jung.visualization.renderers.Renderer;
 
 public class WebCrawlerApp {
     private JFrame frame;
@@ -13,9 +21,18 @@ public class WebCrawlerApp {
     private List<String> sensitiveWords;
     private WebCrawler webCrawler;
 
+    private JButton startButton;
+    private JButton stopButton;
+    private JButton showHtmlButton;
+    private JButton showTextButton;
+    private JButton importButton;
+    private JButton modifyButton;
+    private JButton showmapButton;
+
     public WebCrawlerApp() {
         sensitiveWords = new ArrayList<>();
-        webCrawler = new WebCrawler(10);  // 使用 10 个线程进行爬取
+        webCrawler = new WebCrawler(500);  // 使用 10 个线程进行爬取
+        webCrawler.setCrawlListener(this::onCrawling);
         initComponents();
     }
 
@@ -45,12 +62,16 @@ public class WebCrawlerApp {
         JPanel bottomPanel = new JPanel();
         bottomPanel.setLayout(new FlowLayout());
 
-        JButton startButton = new JButton("开始爬取");
-        JButton stopButton = new JButton("结束爬取");
-        JButton showHtmlButton = new JButton("显示HTML内容");
-        JButton showTextButton = new JButton("显示文本内容");
-        JButton importButton = new JButton("导入敏感词库");
-        JButton modifyButton = new JButton("修改敏感词库");
+        startButton = new JButton("开始爬取");
+        stopButton = new JButton("结束爬取");
+        showHtmlButton = new JButton("显示HTML内容");
+        showTextButton = new JButton("显示文本内容");
+        importButton = new JButton("导入敏感词库");
+        modifyButton = new JButton("修改敏感词库");
+        showmapButton = new JButton("可视化有向图网");
+
+        // 初始化按钮状态
+        stopButton.setEnabled(false);
 
         // 添加按钮事件监听
         startButton.addActionListener(e -> startCrawling(urlField.getText()));
@@ -59,6 +80,7 @@ public class WebCrawlerApp {
         showTextButton.addActionListener(e -> showTextContent());
         importButton.addActionListener(e -> importSensitiveWords());
         modifyButton.addActionListener(e -> modifySensitiveWords());
+        showmapButton.addActionListener(e -> showMap());
 
         bottomPanel.add(startButton);
         bottomPanel.add(stopButton);
@@ -66,6 +88,7 @@ public class WebCrawlerApp {
         bottomPanel.add(showTextButton);
         bottomPanel.add(importButton);
         bottomPanel.add(modifyButton);
+        bottomPanel.add(showmapButton);
 
         frame.add(bottomPanel, BorderLayout.SOUTH);
 
@@ -73,13 +96,39 @@ public class WebCrawlerApp {
     }
 
     private void startCrawling(String url) {
+        // 清空内容显示区域
+        contentArea.setText("");
+
         contentArea.append("开始爬取: " + url + "\n");
+
+        // 清空已爬取的网站列表，准备下一次扫描
+        webCrawler = new WebCrawler(10);
+        webCrawler.setCrawlListener(this::onCrawling);
+
         webCrawler.startCrawling(url);
+
+        // 禁用除“结束爬取”按钮外的所有按钮
+        startButton.setEnabled(false);
+        showHtmlButton.setEnabled(false);
+        showTextButton.setEnabled(false);
+        importButton.setEnabled(false);
+        modifyButton.setEnabled(false);
+        showmapButton.setEnabled(false);
+        stopButton.setEnabled(true);
     }
 
     private void stopCrawling() {
         contentArea.append("结束爬取\n");
         webCrawler.stopCrawling();
+
+        // 启用所有按钮
+        startButton.setEnabled(true);
+        showHtmlButton.setEnabled(true);
+        showTextButton.setEnabled(true);
+        importButton.setEnabled(true);
+        modifyButton.setEnabled(true);
+        showmapButton.setEnabled(true);
+        stopButton.setEnabled(false);
     }
 
     private void showHtmlContent() {
@@ -208,6 +257,44 @@ public class WebCrawlerApp {
             }
         }
         System.out.println("敏感词库已更新: " + sensitiveWords.size() + " 个敏感词");
+    }
+
+    private void showMap() {
+        Graph<String, String> graph = new DirectedSparseMultigraph<>();
+        Map<String, Set<String>> urlRelations = webCrawler.getUrlRelations();
+
+        for (Map.Entry<String, Set<String>> entry : urlRelations.entrySet()) {
+            String source = entry.getKey();
+            Set<String> targets = entry.getValue();
+            for (String target : targets) {
+                graph.addEdge(source + " -> " + target, source, target);
+            }
+        }
+
+        // 布局
+        CircleLayout<String, String> layout = new CircleLayout<>(graph);
+        layout.setSize(new Dimension(500, 500));
+
+        // 创建可视化组件
+        VisualizationViewer<String, String> vv = new VisualizationViewer<>(layout);
+        vv.setPreferredSize(new Dimension(600, 600));
+        vv.getRenderContext().setVertexLabelTransformer(vertex -> vertex);
+        vv.getRenderer().getVertexLabelRenderer().setPosition(Renderer.VertexLabel.Position.CNTR);
+
+        // 添加鼠标交互
+        DefaultModalGraphMouse<String, String> gm = new DefaultModalGraphMouse<>();
+        vv.setGraphMouse(gm);
+
+        // 显示窗口
+        JFrame mapFrame = new JFrame("Graph Visualization");
+        mapFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        mapFrame.getContentPane().add(vv);
+        mapFrame.pack();
+        mapFrame.setVisible(true);
+    }
+
+    private void onCrawling(String url) {
+        SwingUtilities.invokeLater(() -> contentArea.append("正在爬取: " + url + "\n"));
     }
 
     public static void main(String[] args) {
