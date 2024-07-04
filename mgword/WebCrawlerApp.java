@@ -184,7 +184,7 @@ public class WebCrawlerApp {
         contentArea.setText(content);
         Highlighter highlighter = contentArea.getHighlighter();
         Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
-
+        //创建一个 HighlightPainter 对象，用于指定高亮显示的样式，这里选择黄色
         for (String word : sensitiveWords) {
             int index = content.indexOf(word);
             while (index >= 0) {
@@ -260,8 +260,11 @@ public class WebCrawlerApp {
     }
 
     private void showMap() {
+        // 创建一个有向图
+
         Graph<String, String> graph = new DirectedSparseMultigraph<>();
         Map<String, Set<String>> urlRelations = webCrawler.getUrlRelations();
+        // 添加图的节点和边
 
         for (Map.Entry<String, Set<String>> entry : urlRelations.entrySet()) {
             String source = entry.getKey();
@@ -271,7 +274,7 @@ public class WebCrawlerApp {
             }
         }
 
-        // 布局
+        // 圆形布局
         CircleLayout<String, String> layout = new CircleLayout<>(graph);
         layout.setSize(new Dimension(500, 500));
 
